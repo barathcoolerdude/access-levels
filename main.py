@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel
 import uvicorn
+import sqlite3
 
 app = FastAPI()
 
@@ -33,10 +34,16 @@ class LoginData(BaseModel):
 def handle_login(data: LoginData):
     print(f"receiverd login data:{data.username}, {data.password}")
 
-    if data.username == "username" and data.password == "password":
+    if verify_user(data.username, data.password):
         return {"message": "login successful"}
     else:
         return JSONResponse(status_code= 401, content={"message": "login failed"})
+    
+def verify_user(username: str, password: str) -> bool:
+    with sqlite3.connect("user.db") as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM users WHERE username=? AND password=?", (username, password))
+        return cursor.fetchone() is not None
     
 if __name__ == "__main__":
     uvicorn.run("main:app", reload=True)
